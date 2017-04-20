@@ -10,6 +10,23 @@ import UIKit
 import AVFoundation
 import EasyNotificationBadge
 
+public enum CenterButtonType: String {
+    case checkmark = "IconCheckmark"
+    case plus = "IconAdd"
+    case profile = "IconUserWhite"
+    case save = "IconSave"
+    
+    public var selected: String {
+        switch self {
+        case .checkmark:      return "IconCheckmark"
+        case .plus:           return "IconAdd"
+        case .profile:        return "IconUserSelectedWhite"
+        case .save:           return "IconSave"
+        }
+    }
+}
+
+
 public typealias AZTabBarAction = () -> Void
 
 public protocol AZTabBarDelegate: class {
@@ -270,6 +287,8 @@ public class AZTabBarController: UIViewController {
         }
     }
     
+    //  Distance between center button top and tab bar top
+    open var centerButtonOffsetY: CGFloat = 0
     
     /// The duration that is needed to invoke a long click.
     open var longClickTriggerDuration: TimeInterval = 0.5
@@ -315,11 +334,84 @@ public class AZTabBarController: UIViewController {
         }
     }
     
+    public var centerIndex: Int { return Int(round(Double(buttons.count)/2.0)) - 1 }
+    
+    
+    public var isCustomCenterButton: Bool {
+        var result = false
+        if let centerType = currentCenterButton, centerType == .checkmark || centerType == .save {
+            result = true
+        }
+        return result
+    }
+    
+    public func setCenterButton(type: CenterButtonType) {
+        if let current = currentCenterButton, current == type {
+            return
+        }
+        currentCenterButton = type
+    }
+    
+    public var blackLineHidden: Bool {
+        get {
+            return blackLine.isHidden
+        }
+        set {
+            blackLine.isHidden = newValue
+        }
+    }
+    
+    
+    private var currentCenterButton: CenterButtonType? {
+        didSet {
+            guard let centerType = currentCenterButton else {  return  }
+            let image = UIImage(named: centerType.rawValue)!
+            
+            let isHighlighted = self.highlightedButtonIndexes.contains(centerButtonOverlay)
+            let highlightedImage = UIImage(named: centerType.selected)
+            //.withRenderingMode(.alwaysOriginal)//selectedImages[centerIndex]
+            
+            var color: UIColor!
+            if isHighlighted{
+                color = self.highlightedBackgroundColor ?? UIColor.black
+            }else{
+                color = self.selectedColor ?? UIColor.black
+                
+            }
+            //            centerButtonOverlay.setImage(ignoreIconColors ? image : image.withRenderingMode(.alwaysTemplate), for: .normal)
+            //
+            //            centerButtonOverlay.setImage(ignoreIconColors ? image : image.imageWithColor(color: defaultColor), for: [])
+            //            centerButtonOverlay.setImage(ignoreIconColors ? image : image.imageWithColor(color: defaultColor), for: .highlighted)
+            //
+            //            centerButtonOverlay.setImage(ignoreIconColors ? image : image.imageWithColor(color: selectedColor), for: .selected)
+            //            centerButtonOverlay.setImage(ignoreIconColors ? image : image.imageWithColor(color: selectedColor), for: [.normal, .selected, .highlighted])
+            
+            //            self.updateInterfaceIfNeeded()
+            
+            
+            centerButtonOverlay.customizeForTabBarWithImage(image,
+                                                            highlightImage: highlightedImage,
+                                                            selectedColor: color,
+                                                            highlighted: isHighlighted,
+                                                            defaultColor: self.defaultColor ?? UIColor.gray,
+                                                            highlightColor: self.highlightColor ?? UIColor.white,
+                                                            ignoreColor: ignoreIconColors)
+            //            tabItem.image = image
+            //            tabItem.selectedImage = selectedImage
+            //            tabItem.iconView?.icon.image = tabItem.image
+            
+        }
+    }
+
+    
     /// The view that holds the views of the controllers.
     fileprivate var controllersContainer:UIView!
     
     /// The view which holds the buttons.
     fileprivate var buttonsContainer:UIView!
+    
+    // The 1px width view at the top of buttons container
+    fileprivate var blackLine:UIView!
     
     /// The separator line between the controllers container and the buttons container.
     fileprivate var separatorLine:UIView!
@@ -332,6 +424,14 @@ public class AZTabBarController: UIViewController {
     
     /// Array which holds the buttons.
     internal var buttons: NSMutableArray!
+    
+    internal var centerButton: UIButton? {
+        var resultButton: UIButton?
+        if buttons.count >= 3 {
+            resultButton = buttons.object(at: centerIndex) as! UIButton
+        }
+        return resultButton
+    }
     
     /// Array which holds the default tab icons.
     internal var tabIcons: [UIImage]!
@@ -347,6 +447,8 @@ public class AZTabBarController: UIViewController {
     internal var buttonsContainerHeightConstraintInitialConstant:CGFloat!
     
     internal var selectionIndicatorHeightConstraint:NSLayoutConstraint!
+    
+    internal var centerButtonOverlay: AZTabBarButton!
     
     /*
      * MARK: - Private Properties
@@ -380,9 +482,12 @@ public class AZTabBarController: UIViewController {
         //init primary views
         self.controllersContainer = UIView()
         self.buttonsContainer = UIView()
+        self.blackLine = UIView()
+        self.blackLine.isHidden = true
         self.separatorLine = UIView()
         
         //add in correct hierachy
+        self.buttonsContainer.addSubview(self.blackLine)
         self.view.addSubview(self.buttonsContainer)
         self.view.addSubview(self.controllersContainer)
         self.view.addSubview(self.separatorLine)
@@ -390,6 +495,7 @@ public class AZTabBarController: UIViewController {
         //disable autoresizing mask
         self.controllersContainer.translatesAutoresizingMaskIntoConstraints = false
         self.buttonsContainer.translatesAutoresizingMaskIntoConstraints = false
+        self.blackLine.translatesAutoresizingMaskIntoConstraints = false
         self.separatorLine.translatesAutoresizingMaskIntoConstraints = false
         
         //setup constraints
@@ -402,6 +508,11 @@ public class AZTabBarController: UIViewController {
         self.buttonsContainer.topAnchor.constraint(equalTo: self.separatorLine.topAnchor).isActive = true
         self.buttonsContainerHeightConstraint = self.buttonsContainer.heightAnchor.constraint(equalToConstant: 50)
         self.buttonsContainerHeightConstraint.isActive = true
+        
+        self.blackLine.heightAnchor.constraint(equalToConstant: 1).isActive = true
+        self.blackLine.topAnchor.constraint(equalTo: self.buttonsContainer.topAnchor).isActive = true
+        self.blackLine.leadingAnchor.constraint(equalTo: self.buttonsContainer.leadingAnchor).isActive = true
+        self.blackLine.trailingAnchor.constraint(equalTo: self.buttonsContainer.trailingAnchor).isActive = true
         
         self.separatorLine.leadingAnchor.constraint(equalTo: margins.leadingAnchor).isActive = true
         self.separatorLine.trailingAnchor.constraint(equalTo: margins.trailingAnchor).isActive = true
@@ -526,6 +637,10 @@ public class AZTabBarController: UIViewController {
             return
         }
         
+        if index == centerIndex, let action = actions[centerIndex] {
+            action()
+            return
+        }
         if self.selectedIndex != index {
             moveToController(at: index, animated: animated)
         }
@@ -543,6 +658,10 @@ public class AZTabBarController: UIViewController {
     ///   - index: The index of the menu of which you would like to add an action to.
     open func setAction(atIndex index: Int, action: @escaping AZTabBarAction) {
         self.actions[(index)] = action
+    }
+    
+    open func removeAction(atIndex index: Int) {
+        self.actions[(index)] = nil
     }
     
     
@@ -596,6 +715,8 @@ public class AZTabBarController: UIViewController {
     ///   - animated: To animate or not.
     open func setBar(hidden: Bool, animated: Bool,duration: TimeInterval = 0.3, completion: ((Bool)->Void)? = nil) {
         let animations = {() -> Void in
+            self.centerButtonOverlay.alpha = hidden ? 0.0 : 1.0
+            self.centerButtonOverlay.isHidden = hidden
             self.buttonsContainerHeightConstraint.constant = hidden ? 0 : self.buttonsContainerHeightConstraintInitialConstant
             self.view.layoutIfNeeded()
         }
@@ -614,7 +735,7 @@ public class AZTabBarController: UIViewController {
     
     
     func tabButtonAction(button:UIButton){
-        let index = self.buttons.index(of: button)
+        let index = (button == self.centerButtonOverlay) ? centerIndex : self.buttons.index(of: button)
         delegate?.tabBar(self, didSelectTabAtIndex: index)
         
         if let id = delegate?.tabBar(self, systemSoundIdForButtonAtIndex: index), !isAnimating{
@@ -677,18 +798,31 @@ public class AZTabBarController: UIViewController {
     }
     
     private func updateInterfaceIfNeeded() {
+        
+//        let centerBtnExist = (self.buttons.count > self.centerIndex)
+//        if centerBtnExist {
+//            self.view.bringSubview(toFront: (self.buttons[centerIndex] as! UIButton))
+//            (self.buttons[centerIndex] as! UIButton).layer.zPosition = 1
+//        } 
         if self.didSetupInterface {
             // If the UI was already setup, it's necessary to update it.
             self.setupInterface()
+            
+            if (self.buttons.count > self.centerIndex) {
+                self.view.bringSubview(toFront: (self.buttons[centerIndex] as! UIButton))
+                (self.buttons[centerIndex] as! UIButton).layer.zPosition = 1
+            }
         }
     }
     
-    private func setupInterface(){
+    private func setupInterface() {
+        self.blackLine.backgroundColor = UIColor(white: 0, alpha: 0.7)
         self.setupButtons()
         self.setupSelectionIndicator()
         self.setupSeparatorLine()
         self.didSetupInterface = true
     }
+    
     
     private func setupButtons(){
         
@@ -698,10 +832,18 @@ public class AZTabBarController: UIViewController {
             for i in 0 ..< self.tabIcons.count {
                 
                 let button:UIButton = self.createButton(forIndex: i)
-                
+
                 self.buttonsContainer.addSubview(button)
-                
                 self.buttons[i] = button
+                if i == centerIndex {
+                    self.centerButtonOverlay = AZTabBarButton(type: .custom)
+                    self.centerButtonOverlay.delegate = self
+                    self.centerButtonOverlay.tag = i
+                    self.centerButtonOverlay.isExclusiveTouch = true
+                    self.centerButtonOverlay.imageView?.contentMode = .scaleAspectFit
+                    self.centerButtonOverlay.addTarget(self, action: #selector(self.tabButtonAction(button:)), for: .touchUpInside)
+                    self.view.addSubview(centerButtonOverlay)
+                }
             }
             self.setupButtonsConstraints()
         }
@@ -720,7 +862,6 @@ public class AZTabBarController: UIViewController {
             if let selectedImages = self.selectedTabIcons {
                 highlightedImage = selectedImages[i]
             }
-            
             var color: UIColor!
             
             if isHighlighted{
@@ -728,25 +869,68 @@ public class AZTabBarController: UIViewController {
             }else{
                 color = self.selectedColor ?? UIColor.black
             }
+
+            if i == centerIndex {
+                button.isHidden = true
+                centerButtonOverlay.customizeForTabBarWithImage(self.tabIcons[i],
+                                                                highlightImage: highlightedImage,
+                                                                selectedColor: color,
+                                                                highlighted: isHighlighted,
+                                                                defaultColor: self.defaultColor ?? UIColor.gray,
+                                                                highlightColor: self.highlightColor ?? UIColor.white,
+                                                                ignoreColor: ignoreIconColors)
+                customizeCenterButtonBackground(button: self.centerButtonOverlay)
+            } else {
+                button.customizeForTabBarWithImage(self.tabIcons[i],
+                           highlightImage: highlightedImage,
+                           selectedColor: color,
+                           highlighted: isHighlighted,
+                           defaultColor: self.defaultColor ?? UIColor.gray,
+                           highlightColor: self.highlightColor ?? UIColor.white,
+                           ignoreColor: ignoreIconColors)
+            }
+        }
+    }
+    
+    private var backLayer: CALayer?
+    
+    private func customizeCenterButtonBackground(button: AZTabBarButton) {
+        if let plusImgView = button.imageView {
+            let imgSize = plusImgView.frame.size
+            let halfSize: CGFloat = (min( imgSize.width/2, imgSize.height/2)) * 1.2
+            let backSize = imgSize.width * 1.2
             
+            if backLayer == nil {
+                backLayer = CALayer()
+                backLayer!.backgroundColor = buttonsBackgroundColor.cgColor
+                backLayer!.cornerRadius = halfSize
+                backLayer!.shadowColor = #colorLiteral(red: 0.1215686277, green: 0.01176470611, blue: 0.4235294163, alpha: 1).cgColor
+                backLayer!.shadowOpacity = 0.35
+                backLayer!.shadowRadius = 1.5
+                backLayer!.shadowOffset = CGSize(width: 0, height: -2.5)
+            }
+            if backLayer!.superlayer == nil {
+                button.layer.insertSublayer(backLayer!, at: 0)
+            }
             
-            button.customizeForTabBarWithImage(self.tabIcons[i],
-                                               highlightImage: highlightedImage,
-                                               selectedColor: color,
-                                               highlighted: isHighlighted,
-                                               defaultColor: self.defaultColor ?? UIColor.gray,
-                                               highlightColor: self.highlightColor ?? UIColor.white,
-                                               ignoreColor: ignoreIconColors)
+            var imgLayerFrame = plusImgView.layer.frame
+            imgLayerFrame.size.width *= 1.17
+            imgLayerFrame.size.height *= 1.17
+            imgLayerFrame.origin.x -= (imgLayerFrame.size.width - plusImgView.layer.frame.size.width) / 2
+            imgLayerFrame.origin.y -= (imgLayerFrame.size.height - plusImgView.layer.frame.size.height) / 2
+            backLayer!.frame = imgLayerFrame
         }
     }
     
     private func createButton(forIndex index:Int)-> UIButton{
         let button = AZTabBarButton(type: .custom)
-        button.delegate = self
         button.tag = index
-        button.isExclusiveTouch = true
         button.imageView?.contentMode = .scaleAspectFit
-        button.addTarget(self, action: #selector(self.tabButtonAction(button:)), for: .touchUpInside)
+        if index != centerIndex {
+            button.delegate = self
+            button.isExclusiveTouch = true
+            button.addTarget(self, action: #selector(self.tabButtonAction(button:)), for: .touchUpInside)
+        }
         return button
     }
     
@@ -836,6 +1020,8 @@ public class AZTabBarController: UIViewController {
             self.selectedIndex = index
             delegate?.tabBar(self, didMoveToTabAtIndex: index)
             self.statusBarStyle = delegate?.tabBar(self, statusBarStyleForIndex: index) ?? .default
+            self.updateInterfaceIfNeeded()
+            
         }
         
     }
@@ -865,6 +1051,7 @@ public class AZTabBarController: UIViewController {
         let animations = {() -> Void in
             self.selectionIndicatorLeadingConstraint.constant = constant
             self.buttonsContainer.layoutIfNeeded()
+            self.updateInterfaceIfNeeded()
         }
         
         if animated {
@@ -934,6 +1121,15 @@ fileprivate extension AZTabBarController {
             self.view.addConstraints(self.verticalLayoutConstraintsForButtonAtIndex(index: i))
             self.view.addConstraint(self.widthLayoutConstraintForButtonAtIndex(index: i))
             self.view.addConstraint(self.heightLayoutConstraintForButtonAtIndex(index: i))
+            
+            if i == centerIndex {
+//                let bounds = self.buttonsContainer.convert(button.frame, to: self.view)
+                centerButtonOverlay.translatesAutoresizingMaskIntoConstraints = false
+                centerButtonOverlay.topAnchor.constraint(equalTo: button.topAnchor).isActive = true
+                centerButtonOverlay.bottomAnchor.constraint(equalTo: button.bottomAnchor).isActive = true
+                centerButtonOverlay.leadingAnchor.constraint(equalTo: button.leadingAnchor).isActive = true
+                centerButtonOverlay.trailingAnchor.constraint(equalTo: button.trailingAnchor).isActive = true
+            }
         }
     }
     
@@ -958,32 +1154,41 @@ fileprivate extension AZTabBarController {
      */
     private func leftLayoutConstraintsForButtonAtIndex(index: Int)-> [NSLayoutConstraint]{
         let button:UIButton = self.buttons[index] as! UIButton
+        let offset: CGFloat = self.view.frame.width / 3
         
         var leftConstraints:[NSLayoutConstraint]!
         
         if index == 0 {
             leftConstraints = NSLayoutConstraint.constraints(withVisualFormat: "|-(0)-[button]", options: [], metrics: nil, views: ["button": button])
-        }else {
-            
+//        }
+//        else if index == centerIndex {
+//            leftConstraints = [button.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: offset)]
+//            leftConstraints = NSLayoutConstraint.constraints(withVisualFormat: "|-offset-[button]", options: [], metrics: ["offset": offset], views: ["button": button])
+        } else {
             let views = ["previousButton": self.buttons[index - 1], "button": button]
-            
             leftConstraints = NSLayoutConstraint.constraints(withVisualFormat: "[previousButton]-(0)-[button]", options: [], metrics: nil, views: views)
-            
         }
         return leftConstraints
     }
     
     private func verticalLayoutConstraintsForButtonAtIndex(index: Int)-> [NSLayoutConstraint]{
         let button:UIButton = self.buttons[index] as! UIButton
-        
-        return NSLayoutConstraint.constraints(withVisualFormat: "V:|-(0)-[button]", options: [], metrics: nil, views: ["button": button])
-        
+        var offsetY: CGFloat = 0
+        if index == centerIndex {
+            offsetY = self.centerButtonOffsetY
+        }
+        return NSLayoutConstraint.constraints(withVisualFormat: "V:|-offsetY-[button]", options: [], metrics: ["offsetY": offsetY], views: ["button": button])
+//        }
     }
     
     private func widthLayoutConstraintForButtonAtIndex(index: Int)->NSLayoutConstraint {
         let button:UIButton = self.buttons[index] as! UIButton
-        
-        return NSLayoutConstraint(item: button, attribute: .width, relatedBy: .equal, toItem: self.buttonsContainer, attribute: .width, multiplier: 1.0 / CGFloat(self.buttons.count), constant: 0.0)
+        let sizePercents = 1.0 / CGFloat(self.buttons.count)
+//        if index == centerIndex {
+//            return button.widthAnchor.constraint(equalTo: self.view.widthAnchor, multiplier: sizePercents)
+//        } else {
+            return NSLayoutConstraint(item: button, attribute: .width, relatedBy: .equal, toItem: self.buttonsContainer, attribute: .width, multiplier: sizePercents, constant: 0.0)
+//        }
     }
     
     private func heightLayoutConstraintForButtonAtIndex(index: Int)-> NSLayoutConstraint {
@@ -1246,7 +1451,6 @@ extension AZTabBarButton {
             self.setImage(ignoreColor ? image : image.imageWithColor(color: selectedColor), for: .selected)
             self.setImage(ignoreColor ? image : image.imageWithColor(color: selectedColor), for: [.selected, .highlighted])
         }
-        
         
         // We don't want a background color to use the one in the tab bar.
         self.backgroundColor = UIColor.clear
