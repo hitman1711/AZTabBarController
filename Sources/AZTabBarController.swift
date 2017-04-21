@@ -428,7 +428,7 @@ public class AZTabBarController: UIViewController {
     internal var centerButton: UIButton? {
         var resultButton: UIButton?
         if buttons.count >= 3 {
-            resultButton = buttons.object(at: centerIndex) as! UIButton
+            resultButton = buttons.object(at: centerIndex) as? UIButton
         }
         return resultButton
     }
@@ -898,7 +898,7 @@ public class AZTabBarController: UIViewController {
         if let plusImgView = button.imageView {
             let imgSize = plusImgView.frame.size
             let halfSize: CGFloat = (min( imgSize.width/2, imgSize.height/2)) * 1.2
-            let backSize = imgSize.width * 1.2
+            _ = imgSize.width * 1.2
             
             if backLayer == nil {
                 backLayer = CALayer()
