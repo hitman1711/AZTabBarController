@@ -643,6 +643,9 @@ public class AZTabBarController: UIViewController {
         }
         if self.selectedIndex != index {
             moveToController(at: index, animated: animated)
+            if index == centerIndex {
+                return
+            }
         }
         
         if let action = actions[index] {
