@@ -875,7 +875,15 @@ public class AZTabBarController: UIViewController {
 
             if i == centerIndex {
                 button.isHidden = true
-                centerButtonOverlay.customizeForTabBarWithImage(self.tabIcons[i],
+                var theImage: UIImage?
+                if let centerType = currentCenterButton {
+                    theImage = UIImage(named: centerType.rawValue)!
+                    highlightedImage = UIImage(named: centerType.selected)
+                } else {
+                    theImage = self.tabIcons[i]
+                }
+                
+                centerButtonOverlay.customizeForTabBarWithImage(theImage!,
                                                                 highlightImage: highlightedImage,
                                                                 selectedColor: color,
                                                                 highlighted: isHighlighted,
@@ -914,14 +922,13 @@ public class AZTabBarController: UIViewController {
             }
             if backLayer!.superlayer == nil {
                 button.layer.insertSublayer(backLayer!, at: 0)
+                var imgLayerFrame = plusImgView.layer.frame
+                imgLayerFrame.size.width *= 1.17
+                imgLayerFrame.size.height *= 1.17
+                imgLayerFrame.origin.x -= (imgLayerFrame.size.width - plusImgView.layer.frame.size.width) / 2
+                imgLayerFrame.origin.y -= (imgLayerFrame.size.height - plusImgView.layer.frame.size.height) / 2
+                backLayer!.frame = imgLayerFrame
             }
-            
-            var imgLayerFrame = plusImgView.layer.frame
-            imgLayerFrame.size.width *= 1.17
-            imgLayerFrame.size.height *= 1.17
-            imgLayerFrame.origin.x -= (imgLayerFrame.size.width - plusImgView.layer.frame.size.width) / 2
-            imgLayerFrame.origin.y -= (imgLayerFrame.size.height - plusImgView.layer.frame.size.height) / 2
-            backLayer!.frame = imgLayerFrame
         }
     }
     
