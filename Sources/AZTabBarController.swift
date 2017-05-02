@@ -819,7 +819,7 @@ public class AZTabBarController: UIViewController {
     }
     
     private func setupInterface() {
-        self.blackLine.backgroundColor = UIColor(white: 0, alpha: 0.7)
+        self.blackLine.backgroundColor = UIColor(white: 0, alpha: 0.3)
         self.setupButtons()
         self.setupSelectionIndicator()
         self.setupSeparatorLine()
