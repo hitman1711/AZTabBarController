@@ -710,6 +710,11 @@ public class AZTabBarController: UIViewController {
         }
     }
     
+    open func setBarEnabled(enabled: Bool) {
+        self.buttonsContainer.isUserInteractionEnabled = enabled
+        self.centerButtonOverlay.isUserInteractionEnabled = enabled
+    //    self.tabBarController?.tabBar.user
+    }
     
     /// Show and hide the tab bar.
     ///
