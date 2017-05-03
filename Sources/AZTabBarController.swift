@@ -966,6 +966,10 @@ public class AZTabBarController: UIViewController {
                 
                 button.isSelected = selected
                 
+                if i == centerIndex {
+                    centerButtonOverlay.isSelected = selected
+                }
+                
                 if self.highlightsSelectedButton && !(self.actions[i] != nil && self.controllers[i] != nil){
                     button.alpha = selected ? 1.0 : 0.5
                 }
