@@ -15,6 +15,7 @@ public enum CenterButtonType: String {
     case plus = "IconAdd"
     case profile = "IconUserWhite"
     case save = "IconSave"
+    case cancel = "IconCancel"
     
     public var selected: String {
         switch self {
@@ -22,6 +23,7 @@ public enum CenterButtonType: String {
         case .plus:           return "IconAdd"
         case .profile:        return "IconUserSelectedWhite"
         case .save:           return "IconSave"
+        case .cancel:         return "IconCancel"
         }
     }
 }
