@@ -1175,7 +1175,7 @@ fileprivate extension AZTabBarController {
      */
     private func leftLayoutConstraintsForButtonAtIndex(index: Int)-> [NSLayoutConstraint]{
         let button:UIButton = self.buttons[index] as! UIButton
-        let offset: CGFloat = self.view.frame.width / 3
+//        let offset: CGFloat = self.view.frame.width / 3
         
         var leftConstraints:[NSLayoutConstraint]!
         
