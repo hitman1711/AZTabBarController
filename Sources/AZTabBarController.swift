@@ -268,7 +268,7 @@ public class AZTabBarController: UIViewController {
     
     
     /// The appearance of the notification badge.
-    open var notificationBadgeAppearance: BadgeAppearnce = BadgeAppearnce()
+    open var notificationBadgeAppearance: BadgeAppearance = BadgeAppearance()
     
     
     /// The height of the selection indicator.
@@ -678,9 +678,9 @@ public class AZTabBarController: UIViewController {
     open func setBadgeText(_ text: String?, atIndex index:Int){
         if let buttons = buttons{
             if let button = buttons[index] as? UIButton {
-                self.notificationBadgeAppearance.distenceFromCenterX = 15
-                self.notificationBadgeAppearance.distenceFromCenterY = -10
-                button.badge(text: text, appearnce: self.notificationBadgeAppearance)
+                self.notificationBadgeAppearance.distanceFromCenterX = 15
+                self.notificationBadgeAppearance.distanceFromCenterY = -10
+                button.badge(text: text, appearance: self.notificationBadgeAppearance)
             }
         }else{
             self.badgeValues[index] = text
@@ -744,7 +744,7 @@ public class AZTabBarController: UIViewController {
      */
     
     
-    func tabButtonAction(button:UIButton){
+    @objc func tabButtonAction(button:UIButton){
         let index = (button == self.centerButtonOverlay) ? centerIndex : self.buttons.index(of: button)
         delegate?.tabBar(self, didSelectTabAtIndex: index)
         
@@ -1349,7 +1349,7 @@ class AZTabBarButton: UIButton{
         }
     }
     
-    func longClickPerformed(){
+    @objc func longClickPerformed(){
         if isLongClickEnabled{
             self.touchesCancelled(Set<UITouch>(), with: nil)
             self.delegate.longClickAction(self)
